@@ -130,7 +130,7 @@ pipeline
                         stage('ubuntu Doxygen')
                         {
                             agent { label 'ubuntu && build' }
-                            when { anyOf { branch "master"; buildingTag() } }
+                            //when { anyOf { branch "master"; buildingTag() } }
                             steps
                             {
                                 sh 'make docs'
@@ -139,8 +139,8 @@ pipeline
                                 sh 'cd ~/carla-simulator.github.io && \
                                     git pull && \
                                     git add Doxygen && \
-                                    git commit -m "Updated c++ docs" || true && \
-                                    git push'
+                                    git commit -m "Updated c++ docs" || true &&'
+                                    //git push'
                             }
                         }
                     }
