@@ -80,8 +80,11 @@ pipeline
                             agent { label 'ubuntu && build' }
                             steps
                             {
-                                sh 'make package'
-                                sh 'make package ARGS="--packages=AdditionalMaps --clean-intermediate"'
+                                lock('ubuntu_package')
+                                {
+                                    sh 'make package'
+                                    sh 'make package ARGS="--packages=AdditionalMaps --clean-intermediate"'
+                                }
                                 sh 'make examples ARGS="localhost 3654"'
                             }
                             post {
