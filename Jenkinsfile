@@ -253,18 +253,18 @@ pipeline
         }
     }
 
-    // post
-    // {
-    //     always
-    //     {
-    //         node('build')
-    //         {
-    //             deleteDir()
-    //         }
-    //         node('gpu')
-    //         {
-    //             deleteDir()
-    //         }
-    //     }
-    // }
+    post
+    {
+        always
+        {
+            node('build')
+            {
+                deleteDir()
+            }
+            node('gpu')
+            {
+                deleteDir()
+            }
+        }
+    }
 }
