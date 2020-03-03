@@ -12,9 +12,8 @@ namespace traffic_manager {
 namespace PlannerConstants {
 
   static const float HIGHWAY_SPEED = 50.0f / 3.6f;
-  static const float BRAKE_GAIN = 0.5f;
-  static const float BRAKE_TIME_LIMIT = 1.0f;
-  static const float STATIONARY_LEAD_APPROACH_SPEED = 15.0f / 3.6f;
+  static const float STATIONARY_LEAD_APPROACH_SPEED = 10.0f / 3.6f;
+  static const float CRITICAL_BRAKING_MARGIN = 0.1f;
 
 } // namespace PlannerConstants
 
@@ -109,16 +108,14 @@ namespace PlannerConstants {
       //////////////////////// Collision related data handling ///////////////////////////
       float other_vehicle_velocity = 0.0f;
       float relative_velocity = 0.0f;
-      float time_to_target = 0.0f;
 
       if (collision_data.hazard)
       {
         other_vehicle_velocity = collision_data.other_vehicle_velocity;
         relative_velocity =  current_velocity - other_vehicle_velocity;
-        time_to_target = collision_data.distance_to_other_vehicle/relative_velocity;
 
-        if (relative_velocity  > 0.0f
-            && time_to_target > BRAKE_TIME_LIMIT)
+        if (relative_velocity > 0.0f
+            && collision_data.distance_to_other_vehicle > CRITICAL_BRAKING_MARGIN)
         {
           dynamic_target_velocity = std::max(other_vehicle_velocity, STATIONARY_LEAD_APPROACH_SPEED);
         }
@@ -135,37 +132,14 @@ namespace PlannerConstants {
                                                             longitudinal_parameters, lateral_parameters);
 
       // In case of traffic light hazard.
-      if (traffic_light_frame->at(i).traffic_light_hazard) {
+      if (traffic_light_frame->at(i).traffic_light_hazard
+          || (collision_data.hazard
+              && collision_data.distance_to_other_vehicle < CRITICAL_BRAKING_MARGIN)) {
 
         current_state.deviation_integral = 0.0f;
         current_state.velocity_integral = 0.0f;
         actuation_signal.throttle = 0.0f;
         actuation_signal.brake = 1.0f;
-
-      }
-      // In case of collision hazard.
-      else if (collision_data.hazard
-               && (current_velocity - collision_data.other_vehicle_velocity) > 0.0f
-               && time_to_target < BRAKE_TIME_LIMIT) {
-
-        // Relationship between initial velocity (u), final velocity (v),
-        // acceleration (a) and distance travelled (s) : v^2 = u^2 + 2as.
-        double target_deceleration = std::pow(relative_velocity, 2)/(2.0f * collision_data.distance_to_other_vehicle);
-
-        // Projecting current vehicle acceleration on the backward direction
-        // uint vector to obtain deceleration.
-        cg::Vector3D current_acceleration = actor->GetAcceleration();
-        cg::Vector3D reverse_heading_vector = -1* actor->GetTransform().GetForwardVector();
-        float current_deceleration = cg::Math::Dot(current_acceleration, reverse_heading_vector);
-
-        // Simple P controller to determine braking fraction to reach target acceleration.
-        actuation_signal.brake = static_cast<float>(BRAKE_GAIN*((target_deceleration-current_deceleration)/target_deceleration));
-        actuation_signal.brake = std::max(actuation_signal.brake, 1.0f);
-        actuation_signal.throttle = 0.0f;
-
-        // Invalidating integrals due to stopping.
-        current_state.deviation_integral = 0.0f;
-        current_state.velocity_integral = 0.0f;
       }
 
       // Updating PID state.

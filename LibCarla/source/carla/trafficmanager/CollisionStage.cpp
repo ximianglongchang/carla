@@ -128,6 +128,8 @@ namespace CollisionStageConstants {
 
       CollisionToPlannerData &message = current_planner_frame->at(i);
       message.hazard = collision_hazard;
+      message.distance_to_other_vehicle = available_distance_margin;
+      message.other_vehicle_velocity = other_vehicle_velocity;
     }
   }
 
@@ -241,9 +243,9 @@ namespace CollisionStageConstants {
       ) {
 
         hazard = true;
-        const float specific_distance_margin = parameters.GetDistanceToLeadingVehicle(reference_vehicle);
+        // TODO: Remove thresholding after fixing parameters class to return clamped values.
+        const float specific_distance_margin = std::max(parameters.GetDistanceToLeadingVehicle(reference_vehicle), 2.0f);
         available_distance_margin = std::max(inter_bbox_distance - specific_distance_margin, 0.0f);
-
       }
     }
 
