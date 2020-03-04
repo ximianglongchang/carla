@@ -14,8 +14,13 @@ ATrafficLightManager::ATrafficLightManager()
   SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
   RootComponent = SceneComponent;
 
-  static ConstructorHelpers::FObjectFinder<UBlueprint> TrafficLightFinder( TEXT( "Blueprint'/Game/Carla/Blueprints/Test.Test'" ) );
-  TrafficLightModel = TrafficLightFinder.Object->GeneratedClass;
+    // Hard codded default traffic light blueprint
+  static ConstructorHelpers::FObjectFinder<UBlueprint> TrafficLightFinder(
+      TEXT( "Blueprint'/Game/Carla/Blueprints/TrafficLight/BP_TLOpenDrive.BP_TLOpenDrive'" ) );
+  if (TrafficLightFinder.Succeeded())
+  {
+    TrafficLightModel = TrafficLightFinder.Object->GeneratedClass;
+  }
 }
 
 void ATrafficLightManager::RegisterLightComponent(UTrafficLightComponent * TrafficLight)
@@ -106,6 +111,7 @@ void ATrafficLightManager::GenerateTrafficLights()
     carla::log_warning("Error: no traffic light model.");
     return;
   }
+
   const auto& Signals = GetMap()->GetSignals();
   for(const auto& ControllerPair : GetMap()->GetControllers())
   {
@@ -120,7 +126,11 @@ void ATrafficLightManager::GenerateTrafficLights()
       FActorSpawnParameters SpawnParams;
       SpawnParams.Owner = this;
       SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-      AActor * TrafficLight = GetWorld()->SpawnActor<AActor>(TrafficLightModel, SpawnTransform.GetLocation(), FRotator(SpawnTransform.GetRotation()), SpawnParams);
+      ATrafficSignBase * TrafficLight = GetWorld()->SpawnActor<ATrafficSignBase>(
+        TrafficLightModel,
+        SpawnTransform.GetLocation(),
+        SpawnTransform.Rotator(),
+        SpawnParams);
 
       carla::log_warning("Actor Spawned");
       UTrafficLightComponent *TrafficLightComponent = NewObject<UTrafficLightComponent>(TrafficLight);
