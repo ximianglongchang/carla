@@ -12,12 +12,16 @@ namespace traffic_manager {
 namespace CollisionStageConstants {
 
   static const float VERTICAL_OVERLAP_THRESHOLD = 2.0f;
-  static const float BOUNDARY_EXTENSION_MINIMUM = 1.0f;
   static const float EXTENSION_SQUARE_POINT = 7.5f;
   static const float TIME_HORIZON = 0.5f;
   static const float HIGHWAY_SPEED = 50.0f / 3.6f;
   static const float HIGHWAY_TIME_HORIZON = 5.0f;
-  static const float CRAWL_SPEED = 10.0f / 3.6f;
+  static const float CRAWL_SPEED_1 = 12.0f / 3.6f;
+  static const float CRAWL_SPEED_2 = 8.0f / 3.6f;
+  static const float CRAWL_SPEED_MINIMUM = 3.0f / 3.6f;
+  static const float BOUNDARY_EXTENSION_1 = 12.0f;
+  static const float BOUNDARY_EXTENSION_2 = 7.0f;
+  static const float BOUNDARY_EXTENSION_MINIMUM = 2.0f;
   static const float BOUNDARY_EDGE_LENGTH = 2.0f;
   static const float MAX_COLLISION_RADIUS = 100.0f;
   static const float MIN_COLLISION_RADIUS = 15.0f;
@@ -116,6 +120,12 @@ namespace CollisionStageConstants {
                     collision_hazard = true;
                     available_distance_margin = negotiation_result.second;
                     other_vehicle_velocity = other_actor->GetVelocity().Length();
+
+                    ////////////////////////////////////// DEBUG //////////////////////////////////////
+                    debug_helper.DrawArrow(ego_location + cg::Location(0, 0, 2),
+                                           other_actor->GetLocation() + cg::Location(0, 0, 2),
+                                           0.2f, 0.2f, {0u, 0u, 255u}, 0.05f);
+                    ///////////////////////////////////////////////////////////////////////////////////
                   }
                 }
               }
@@ -244,7 +254,8 @@ namespace CollisionStageConstants {
 
         hazard = true;
         // TODO: Remove thresholding after fixing parameters class to return clamped values.
-        const float specific_distance_margin = std::max(parameters.GetDistanceToLeadingVehicle(reference_vehicle), 2.0f);
+        const float specific_distance_margin = std::max(parameters.GetDistanceToLeadingVehicle(reference_vehicle),
+                                                        BOUNDARY_EXTENSION_MINIMUM);
         available_distance_margin = std::max(inter_bbox_distance - specific_distance_margin, 0.0f);
       }
     }
@@ -359,13 +370,17 @@ namespace CollisionStageConstants {
     float bbox_extension = BOUNDARY_EXTENSION_MINIMUM;
     if (velocity > HIGHWAY_SPEED) {
       bbox_extension = HIGHWAY_TIME_HORIZON * velocity;
-    } else if (velocity < CRAWL_SPEED) {
+    } else if (velocity > CRAWL_SPEED_1 && velocity < HIGHWAY_SPEED) {
+      bbox_extension = std::sqrt(EXTENSION_SQUARE_POINT * velocity) +
+                                 velocity * TIME_HORIZON +
+                                 BOUNDARY_EXTENSION_MINIMUM;
+      bbox_extension = std::max(bbox_extension, BOUNDARY_EXTENSION_1);
+    } else if (velocity > CRAWL_SPEED_2 && velocity < CRAWL_SPEED_1) {
+      bbox_extension = BOUNDARY_EXTENSION_1;
+    } else if (velocity > CRAWL_SPEED_MINIMUM && velocity < CRAWL_SPEED_2) {
+      bbox_extension = BOUNDARY_EXTENSION_2;
+    } else if (velocity < CRAWL_SPEED_MINIMUM) {
       bbox_extension = BOUNDARY_EXTENSION_MINIMUM;
-    } else {
-      bbox_extension = std::sqrt(
-                          EXTENSION_SQUARE_POINT * velocity) +
-                          velocity * TIME_HORIZON +
-                          BOUNDARY_EXTENSION_MINIMUM;
     }
 
     return bbox_extension;

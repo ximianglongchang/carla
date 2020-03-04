@@ -12,8 +12,10 @@ namespace traffic_manager {
 namespace PlannerConstants {
 
   static const float HIGHWAY_SPEED = 50.0f / 3.6f;
-  static const float STATIONARY_LEAD_APPROACH_SPEED = 10.0f / 3.6f;
-  static const float CRITICAL_BRAKING_MARGIN = 0.1f;
+  static const float STATIONARY_LEAD_APPROACH_SPEED_1 = 10.0f / 3.6f;
+  static const float STATIONARY_LEAD_APPROACH_SPEED_2 = 5.0f / 3.6f;
+  static const float CRITICAL_BRAKING_MARGIN_1 = 5.0f;
+  static const float CRITICAL_BRAKING_MARGIN_2 = 0.1f;
 
 } // namespace PlannerConstants
 
@@ -115,9 +117,13 @@ namespace PlannerConstants {
         relative_velocity =  current_velocity - other_vehicle_velocity;
 
         if (relative_velocity > 0.0f
-            && collision_data.distance_to_other_vehicle > CRITICAL_BRAKING_MARGIN)
+            && collision_data.distance_to_other_vehicle > CRITICAL_BRAKING_MARGIN_1)
         {
-          dynamic_target_velocity = std::max(other_vehicle_velocity, STATIONARY_LEAD_APPROACH_SPEED);
+          dynamic_target_velocity = std::max(other_vehicle_velocity, STATIONARY_LEAD_APPROACH_SPEED_1);
+        } else if (relative_velocity > 0.0f
+            && collision_data.distance_to_other_vehicle > CRITICAL_BRAKING_MARGIN_2)
+        {
+          dynamic_target_velocity = std::max(other_vehicle_velocity, STATIONARY_LEAD_APPROACH_SPEED_2);
         }
       }
       ///////////////////////////////////////////////////////////////////////////////////
@@ -134,12 +140,17 @@ namespace PlannerConstants {
       // In case of traffic light hazard.
       if (traffic_light_frame->at(i).traffic_light_hazard
           || (collision_data.hazard
-              && collision_data.distance_to_other_vehicle < CRITICAL_BRAKING_MARGIN)) {
+              && collision_data.distance_to_other_vehicle < CRITICAL_BRAKING_MARGIN_2)) {
 
         current_state.deviation_integral = 0.0f;
         current_state.velocity_integral = 0.0f;
         actuation_signal.throttle = 0.0f;
         actuation_signal.brake = 1.0f;
+
+        //////////////////////////////////// DEBUG ////////////////////////////////////////
+        debug_helper.DrawString(actor->GetLocation() + cg::Location(0, 0, 3), "STOPPING!",
+                                false, {255u, 0u, 255u}, 0.1f);
+        ///////////////////////////////////////////////////////////////////////////////////
       }
 
       // Updating PID state.
