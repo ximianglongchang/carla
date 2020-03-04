@@ -21,26 +21,6 @@ UTrafficLightComponent::UTrafficLightComponent()
 void UTrafficLightComponent::BeginPlay()
 {
   Super::BeginPlay();
-
-  // Search the Traffic Light Manager
-  TArray<AActor*> TrafficLightManagerArray;
-  UGameplayStatics::GetAllActorsOfClass(
-      GetWorld(),
-      ATrafficLightManager::StaticClass(),
-      TrafficLightManagerArray);
-
-  // Create it if missing
-  if (!TrafficLightManagerArray.Num())
-  {
-    TrafficLightManagerArray.Add(
-        GetWorld()->SpawnActor<ATrafficLightManager>());
-  }
-
-  // Register this component
-  ATrafficLightManager *TrafficLightManager = Cast<ATrafficLightManager>(TrafficLightManagerArray.Top());
-  TrafficLightManager->RegisterLightComponent(this);
-
-  carla::log_warning("Registering light", TCHAR_TO_UTF8(*GetSignId()));
 }
 
 // Called every frame
@@ -76,4 +56,9 @@ void UTrafficLightComponent::SetFrozenGroup(bool InFreeze)
 ATrafficLightGroup* UTrafficLightComponent::GetGroup()
 {
   return TrafficLightGroup;
+}
+
+UTrafficLightController* UTrafficLightComponent::GetController()
+{
+  return TrafficLightController;
 }

@@ -137,6 +137,7 @@ void ATrafficLightManager::GenerateTrafficLights()
       TrafficLightComponent->SetSignId(SignalId.c_str());
       TrafficLightComponent->RegisterComponent();
       TrafficLightComponent->AttachToComponent(TrafficLight->GetRootComponent(),FAttachmentTransformRules::KeepRelativeTransform);
+      RegisterLightComponent(TrafficLightComponent);
       carla::log_warning("Component Created");
     }
   }
