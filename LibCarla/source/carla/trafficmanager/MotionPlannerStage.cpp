@@ -146,11 +146,6 @@ namespace PlannerConstants {
         current_state.velocity_integral = 0.0f;
         actuation_signal.throttle = 0.0f;
         actuation_signal.brake = 1.0f;
-
-        //////////////////////////////////// DEBUG ////////////////////////////////////////
-        debug_helper.DrawString(actor->GetLocation() + cg::Location(0, 0, 3), "STOPPING!",
-                                false, {255u, 0u, 255u}, 0.1f);
-        ///////////////////////////////////////////////////////////////////////////////////
       }
 
       // Updating PID state.

@@ -71,25 +71,37 @@ namespace CollisionStageConstants {
 
       const Actor ego_actor = data.actor;
       const ActorId ego_actor_id = ego_actor->GetId();
-      const std::unordered_map<ActorId, Actor> overlapping_actors = data.overlapping_actors;
       const cg::Location ego_location = ego_actor->GetLocation();
+
       const SimpleWaypointPtr& closest_point = data.closest_waypoint;
       const SimpleWaypointPtr& junction_look_ahead = data.junction_look_ahead_waypoint;
+      const std::unordered_map<ActorId, Actor> overlapping_actors = data.overlapping_actors;
 
-      // Retrieve actors around the path of the ego vehicle.
       bool collision_hazard = false;
       float available_distance_margin = std::numeric_limits<float>::infinity();
       float other_vehicle_velocity = 0.0f;
       const SimpleWaypointPtr safe_point_junction = localization_frame->at(vehicle_id_to_index.at(ego_actor->GetId())).safe_point_after_junction;
 
+      // Copy overlapping actors to a vector and sorting in accending order of distance to current vehicle.
+      using ActorInfo = std::pair<ActorId, Actor>;
+      std::vector<ActorInfo> collision_candidates(overlapping_actors.begin(), overlapping_actors.end());
+      std::sort(collision_candidates.begin(), collision_candidates.end(),
+                [&ego_location] (const ActorInfo& a_info_1, const ActorInfo& a_info_2) {
+                  const cg::Location& e_loc = ego_location;
+                  const cg::Location loc_1 = a_info_1.second->GetLocation();
+                  const cg::Location loc_2 = a_info_2.second->GetLocation();
+                  return (cg::Math::DistanceSquared(e_loc, loc_1) < cg::Math::DistanceSquared(e_loc, loc_2));
+                });
+
       // Check every actor in the vicinity if it poses a collision hazard.
-      for (auto j = overlapping_actors.begin(); (j != overlapping_actors.end()) && !collision_hazard; ++j) {
+      for (auto actor_info = collision_candidates.begin();
+           actor_info != collision_candidates.end() && !collision_hazard;
+           ++actor_info) {
 
         try {
-
-          const Actor other_actor = j->second;
+          const ActorId other_actor_id = actor_info->first;
+          const Actor other_actor = actor_info->second;
           const auto other_actor_type = other_actor->GetTypeId();
-          const ActorId other_actor_id = j->first;
           const cg::Location other_location = other_actor->GetLocation();
 
           // Collision checks increase with speed
@@ -120,12 +132,6 @@ namespace CollisionStageConstants {
                     collision_hazard = true;
                     available_distance_margin = negotiation_result.second;
                     other_vehicle_velocity = other_actor->GetVelocity().Length();
-
-                    ////////////////////////////////////// DEBUG //////////////////////////////////////
-                    debug_helper.DrawArrow(ego_location + cg::Location(0, 0, 2),
-                                           other_actor->GetLocation() + cg::Location(0, 0, 2),
-                                           0.2f, 0.2f, {0u, 0u, 255u}, 0.05f);
-                    ///////////////////////////////////////////////////////////////////////////////////
                   }
                 }
               }
