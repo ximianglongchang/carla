@@ -84,7 +84,16 @@ namespace CollisionStageConstants {
 
       // Copy overlapping actors to a vector and sorting in accending order of distance to current vehicle.
       using ActorInfo = std::pair<ActorId, Actor>;
-      std::vector<ActorInfo> collision_candidates(overlapping_actors.begin(), overlapping_actors.end());
+      std::vector<ActorInfo> collision_candidates;
+
+      std::copy_if(overlapping_actors.begin(), overlapping_actors.end(),
+                   std::back_insert_iterator< std::vector<ActorInfo>>(collision_candidates),
+                   [&ego_location] (const ActorInfo& actor_info) {
+                     return (actor_info.second->IsAlive()
+                             && cg::Math::DistanceSquared(actor_info.second->GetLocation(),
+                                                          ego_location) < std::pow(MAX_COLLISION_RADIUS, 2));
+                   });
+
       std::sort(collision_candidates.begin(), collision_candidates.end(),
                 [&ego_location] (const ActorInfo& a_info_1, const ActorInfo& a_info_2) {
                   const cg::Location& e_loc = ego_location;
