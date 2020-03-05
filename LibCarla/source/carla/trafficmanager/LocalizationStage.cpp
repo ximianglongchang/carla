@@ -107,7 +107,11 @@ namespace LocalizationConstants {
       // Clear buffer if vehicle is too far from the first waypoint in the buffer.
       if (!waypoint_buffer.empty() &&
           cg::Math::DistanceSquared(waypoint_buffer.front()->GetLocation(), vehicle_location) > 10.0f) {
-        waypoint_buffer.clear();
+
+        auto number_of_pops = waypoint_buffer.size();
+        for (uint64_t j = 0u; j < number_of_pops; ++j) {
+          PopWaypoint(waypoint_buffer, actor_id);
+        }
       }
 
       // Purge passed waypoints.
@@ -662,7 +666,7 @@ SimpleWaypointPtr LocalizationStage::GetSafeLocationAfterJunction(const Vehicle 
             selection_index = static_cast<uint64_t>(rand()) % next_waypoints.size();
           }
 
-          waypoint_buffer.push_back(next_waypoints.at(selection_index));
+          PushWaypoint(waypoint_buffer, vehicle->GetId(), next_waypoints.at(selection_index));
         }
       // Save the last one
       safe_point = waypoint_buffer.back();
@@ -695,7 +699,7 @@ SimpleWaypointPtr LocalizationStage::GetSafeLocationAfterJunction(const Vehicle 
           selection_index = static_cast<uint64_t>(rand()) % next_waypoints.size();
         }
 
-        waypoint_buffer.push_back(next_waypoints.at(selection_index));
+        PushWaypoint(waypoint_buffer, vehicle->GetId(), next_waypoints.at(selection_index));
       }
       final_point = waypoint_buffer.back();
     }
